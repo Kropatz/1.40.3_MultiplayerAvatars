@@ -29,13 +29,13 @@ jobs:
       run: |
         mkdir -p Refs/Plugins
         echo "Downloading SiraUtil..."
-        curl -L -o Refs/Plugins/SiraUtil.dll https://github.com/Auros/SiraUtil/releases/download/v3.4.0/SiraUtil.dll
+        curl -L -o Refs/Plugins/SiraUtil.dll https://github.com/Auros/SiraUtil/releases/latest/download/SiraUtil.dll
         echo "Downloading MultiplayerCore..."
-        curl -L -o Refs/Plugins/MultiplayerCore.dll https://github.com/Goobwabber/MultiplayerCore/releases/download/v1.1.2/MultiplayerCore.dll
+        curl -L -o Refs/Plugins/MultiplayerCore.dll https://github.com/Goobwabber/MultiplayerCore/releases/latest/download/MultiplayerCore.dll
         echo "Downloading CustomAvatar..."
-        curl -L -o Refs/Plugins/CustomAvatar.dll https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.13/CustomAvatar.dll
+        curl -L -o Refs/Plugins/CustomAvatar.dll https://github.com/nicoco007/BeatSaberCustomAvatars/releases/latest/download/CustomAvatar.dll
         
-        echo "Verifying downloaded files..."
+        echo "Verifying downloaded file sizes..."
         ls -lh Refs/Plugins/
 
     - name: Build Solution
