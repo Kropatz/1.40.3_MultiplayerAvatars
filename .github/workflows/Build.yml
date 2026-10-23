@@ -25,18 +25,31 @@ jobs:
       with:
         manifest: 'MultiplayerAvatars/manifest.json'
 
-    - name: Download Missing Mod Dependencies
+    - name: Download & Extract Mod Dependencies
       run: |
         mkdir -p Refs/Plugins
-        echo "Downloading SiraUtil..."
-        curl -L -o Refs/Plugins/SiraUtil.dll https://github.com/Auros/SiraUtil/releases/latest/download/SiraUtil.dll
-        echo "Downloading MultiplayerCore..."
-        curl -L -o Refs/Plugins/MultiplayerCore.dll https://github.com/Goobwabber/MultiplayerCore/releases/latest/download/MultiplayerCore.dll
-        echo "Downloading CustomAvatar..."
-        curl -L -o Refs/Plugins/CustomAvatar.dll https://github.com/nicoco007/BeatSaberCustomAvatars/releases/latest/download/CustomAvatar.dll
+        mkdir -p temp_deps
+
+        echo "Downloading dependencies..."
+        curl -sL "https://github.com/Auros/SiraUtil/releases/download/3.1.10/SiraUtil.dll" -o temp_deps/SiraUtil.dll
+        curl -sL "https://github.com/Goobwabber/MultiplayerCore/releases/download/1.5.0/MultiplayerCore.dll" -o temp_deps/MultiplayerCore.dll
         
-        echo "Verifying downloaded file sizes..."
-        ls -lh Refs/Plugins/
+        # Download CustomAvatar release package & extract
+        curl -sL "https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip
+        unzip -q temp_deps/CustomAvatar.zip -d temp_deps/ca_extracted/ || true
+        
+        # Copy DLLs into both Refs/ and Refs/Plugins/
+        cp temp_deps/SiraUtil.dll Refs/ 2>/dev/null || true
+        cp temp_deps/SiraUtil.dll Refs/Plugins/ 2>/dev/null || true
+        
+        cp temp_deps/MultiplayerCore.dll Refs/ 2>/dev/null || true
+        cp temp_deps/MultiplayerCore.dll Refs/Plugins/ 2>/dev/null || true
+
+        find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/ \;
+        find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/Plugins/ \;
+
+        echo "Verifying copied DLL sizes in Refs:"
+        ls -lh Refs/
 
     - name: Build Solution
       run: dotnet build MultiplayerAvatars.sln -c Release
