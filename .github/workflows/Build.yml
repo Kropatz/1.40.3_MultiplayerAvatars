@@ -30,26 +30,32 @@ jobs:
         mkdir -p Refs/Plugins
         mkdir -p temp_deps
 
-        echo "Downloading dependencies..."
-        curl -sL "https://github.com/Auros/SiraUtil/releases/download/3.1.10/SiraUtil.dll" -o temp_deps/SiraUtil.dll
-        curl -sL "https://github.com/Goobwabber/MultiplayerCore/releases/download/1.5.0/MultiplayerCore.dll" -o temp_deps/MultiplayerCore.dll
-        
-        # Download CustomAvatar release package & extract
-        curl -sL "https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip
+        echo "Downloading zipped release packages..."
+        # SiraUtil zip
+        curl -sL "https://github.com/Auros/SiraUtil/releases/download/v3.1.10/SiraUtil-v3.1.10.zip" -o temp_deps/SiraUtil.zip || true
+        unzip -q temp_deps/SiraUtil.zip -d temp_deps/sira_extracted/ || true
+
+        # MultiplayerCore zip
+        curl -sL "https://github.com/Goobwabber/MultiplayerCore/releases/download/1.5.0/MultiplayerCore.zip" -o temp_deps/MultiplayerCore.zip || true
+        unzip -q temp_deps/MultiplayerCore.zip -d temp_deps/mpcore_extracted/ || true
+
+        # CustomAvatar zip
+        curl -sL "https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip || true
         unzip -q temp_deps/CustomAvatar.zip -d temp_deps/ca_extracted/ || true
-        
-        # Copy DLLs into both Refs/ and Refs/Plugins/
-        cp temp_deps/SiraUtil.dll Refs/ 2>/dev/null || true
-        cp temp_deps/SiraUtil.dll Refs/Plugins/ 2>/dev/null || true
-        
-        cp temp_deps/MultiplayerCore.dll Refs/ 2>/dev/null || true
-        cp temp_deps/MultiplayerCore.dll Refs/Plugins/ 2>/dev/null || true
+
+        echo "Extracting DLLs to Refs folders..."
+        find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/ \;
+        find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/Plugins/ \;
+
+        find temp_deps/ -name "MultiplayerCore.dll" -exec cp {} Refs/ \;
+        find temp_deps/ -name "MultiplayerCore.dll" -exec cp {} Refs/Plugins/ \;
 
         find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/ \;
         find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/Plugins/ \;
 
         echo "Verifying copied DLL sizes in Refs:"
         ls -lh Refs/
+        ls -lh Refs/Plugins/
 
     - name: Build Solution
       run: dotnet build MultiplayerAvatars.sln -c Release
