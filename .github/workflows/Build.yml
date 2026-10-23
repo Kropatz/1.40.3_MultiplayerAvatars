@@ -28,10 +28,15 @@ jobs:
     - name: Download Missing Mod Dependencies
       run: |
         mkdir -p Refs/Plugins
-        # Download SiraUtil, MultiplayerCore, and CustomAvatar release DLLs for 1.40 compatibility
+        echo "Downloading SiraUtil..."
         curl -L -o Refs/Plugins/SiraUtil.dll https://github.com/Auros/SiraUtil/releases/download/v3.4.0/SiraUtil.dll
+        echo "Downloading MultiplayerCore..."
         curl -L -o Refs/Plugins/MultiplayerCore.dll https://github.com/Goobwabber/MultiplayerCore/releases/download/v1.1.2/MultiplayerCore.dll
+        echo "Downloading CustomAvatar..."
         curl -L -o Refs/Plugins/CustomAvatar.dll https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.13/CustomAvatar.dll
+        
+        echo "Verifying downloaded files..."
+        ls -lh Refs/Plugins/
 
     - name: Build Solution
       run: dotnet build MultiplayerAvatars.sln -c Release
