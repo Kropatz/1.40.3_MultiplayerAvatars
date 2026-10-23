@@ -2,10 +2,10 @@
   "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
   "id": "MultiplayerAvatars",
   "name": "MultiplayerAvatars",
-  "author": "Goobwabber",
+  "author": "Cynder",
   "version": "0.2.0",
   "description": "Adds CustomAvatar support for beatsaber using MultiplayerExtensions.",
-  "gameVersion": "1.25.1",
+  "gameVersion": "1.40.3",
   "dependsOn": {
     "BSIPA": "^4.1.4",
     "MultiplayerCore": "^1.1.2",
