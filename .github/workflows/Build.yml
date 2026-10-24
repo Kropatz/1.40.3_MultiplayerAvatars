@@ -68,37 +68,35 @@ jobs:
           ls -lh Refs/Plugins/
           ls -lh Refs/Libs/ 
             
-      - name: Inspect CustomAvatar tracking API
+      - name: Locate AvatarPoseController
         shell: bash
         run: |
-          echo "=== Searching all assemblies for old controller ==="
-          find Refs -type f -name '*.dll' -print0 |
-          while IFS= read -r -d '' dll; do
-            if strings "$dll" 2>/dev/null |
-              grep -q 'AvatarPoseController'; then
-              echo "Found in: $dll"
-            fi
-          done
-
-          echo "=== Installing ILSpy command-line tool ==="
+          echo "=== Installing ILSpy ==="
           dotnet tool install ilspycmd \
             --tool-path "$RUNNER_TEMP/tools"
 
           ILSPY="$RUNNER_TEMP/tools/ilspycmd"
 
-          echo "=== Relevant CustomAvatar types ==="
-          "$ILSPY" -l c Refs/Plugins/CustomAvatar.dll |
-            grep -Ei \
-            'TrackingRig|AvatarTransformTracking|AvatarPoseController|IAvatarInput|ControllerNode' || true
+          for dll in \
+            "Refs/Beat Saber_Data/Managed/BeatSaber.BeatAvatarAdapter.dll" \
+            "Refs/Beat Saber_Data/Managed/BeatSaber.AvatarCore.dll" \
+            "Refs/Beat Saber_Data/Managed/BeatSaber.BeatAvatarSDK.dll"
+          do
+            echo "=== Searching $dll ==="
 
-          for type in \
-            CustomAvatar.Tracking.TrackingRig \
-            CustomAvatar.Tracking.AvatarTransformTracking \
-            CustomAvatar.Tracking.IAvatarInput; do
+            types=$("$ILSPY" -l c "$dll" |
+              grep -i 'AvatarPoseController' || true)
 
-            echo "=== Decompiling $type ==="
-            "$ILSPY" -t "$type" \
-              Refs/Plugins/CustomAvatar.dll || true
+            if [ -z "$types" ]; then
+              echo "No matching class found in this assembly."
+            else
+              while IFS= read -r line; do
+                type="${line#* }"
+
+                echo "=== Class definition: $type ==="
+                "$ILSPY" -t "$type" "$dll" || true
+              done <<< "$types"
+            fi
           done
 
       - name: Build Solution
