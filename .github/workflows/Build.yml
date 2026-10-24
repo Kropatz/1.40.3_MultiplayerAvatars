@@ -37,13 +37,22 @@ jobs:
           echo "Downloading CustomAvatar..."
           curl -sSL "https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip
           unzip -q -o temp_deps/CustomAvatar.zip -d temp_deps/ca/
+
+          echo "Downloading SongCore..."
+          curl -sSL "https://github.com/Kylemc1413/SongCore/releases/download/v3.10.4/SongCore-3.10.4-bs1.31.0-fbb0684.zip" -o temp_deps/SongCore.zip
+          unzip -q -o temp_deps/SongCore.zip -d temp_deps/songcore/
+
+          echo "Downloading BeatSaberMarkupLanguage..."
+          curl -sSL "https://github.com/monkeymanboy/BeatSaberMarkupLanguage/releases/download/v1.14.2/BeatSaberMarkupLanguage-v1.14.2+bs.1.41.1-RELEASE.zip" -o temp_deps/BSML.zip
+          unzip -q -o temp_deps/BSML.zip -d temp_deps/bsml/
+
+          echo "Downloading BeatSaverSharp..."
+          curl -sSL "https://github.com/Auros/BeatSaverSharper/releases/download/v3.4.5/BeatSaverSharper-Beat.Saber.zip" -o temp_deps/BeatSaverSharp.zip
+          unzip -q -o temp_deps/BeatSaverSharp.zip -d temp_deps/bss/
           
-          # Copy DLLs to Refs and Refs/Plugins
-          find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/ \;
-          find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/Plugins/ \;
-          
-          find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/ \;
-          find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/Plugins/ \;
+          # Automatically copy all DLL files from all downloaded dependencies into Refs and Refs/Plugins
+          find temp_deps/ -name "*.dll" -exec cp {} Refs/ \;
+          find temp_deps/ -name "*.dll" -exec cp {} Refs/Plugins/ \;
           
           # Clean up temp files
           rm -rf temp_deps
