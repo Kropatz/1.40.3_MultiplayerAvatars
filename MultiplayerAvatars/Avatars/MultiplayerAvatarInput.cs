@@ -1,4 +1,5 @@
-﻿using CustomAvatar.Tracking;
+using CustomAvatar.Avatar;
+using CustomAvatar.Tracking;
 using IPA.Utilities;
 using System;
 using UnityEngine;
