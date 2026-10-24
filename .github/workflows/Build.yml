@@ -70,3 +70,13 @@ jobs:
         run: |
           ROOT_DIR=$(pwd)
           dotnet build MultiplayerAvatars.sln -c Release /p:BeatSaberDir="$ROOT_DIR/Refs"
+
+      - name: Upload Plugin Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MultiplayerAvatars-${{ github.run_number }}
+          path: |
+            MultiplayerAvatars/bin/Release/net48/MultiplayerAvatars.dll
+            MultiplayerAvatars/bin/Release/net48/MultiplayerAvatars.pdb
+          if-no-files-found: error
+          retention-days: 30
