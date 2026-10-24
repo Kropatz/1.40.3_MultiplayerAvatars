@@ -86,5 +86,24 @@ namespace MultiplayerAvatars.Avatars
                     return false;
             }
         }
+
+        public bool TryGetTransform(DeviceUse use, out Transform transform)
+        {
+            switch (use)
+            {
+                case DeviceUse.Head:
+                    transform = headTransform;
+                    return true;
+                case DeviceUse.RightHand:
+                    transform = rightHandTransform;
+                    return true;
+                case DeviceUse.LeftHand:
+                    transform = leftHandTransform;
+                    return true;
+                default:
+                    transform = null;
+                    return false;
+            }
+        }
     }
 }
