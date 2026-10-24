@@ -25,6 +25,14 @@ jobs:
       with:
         manifest: 'MultiplayerAvatars/manifest.json'
 
+    - name: Move References into Refs/ Folder
+      run: |
+        mkdir -p Refs
+        # Move the downloaded game files into Refs/ so the .csproj can find them
+        [ -d "Beat Saber_Data" ] && mv "Beat Saber_Data" Refs/
+        [ -d "Libs" ] && mv "Libs" Refs/
+        [ -d "Plugins" ] && mv "Plugins" Refs/
+
     - name: Download SiraUtil & CustomAvatar
       run: |
         mkdir -p Refs/Plugins
@@ -35,6 +43,7 @@ jobs:
         unzip -q -o temp_deps/SiraUtil.zip -d temp_deps/sira/
 
         echo "Downloading CustomAvatar..."
+        curl -sSL "https://nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip || \
         curl -sSL "https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip
         unzip -q -o temp_deps/CustomAvatar.zip -d temp_deps/ca/
 
