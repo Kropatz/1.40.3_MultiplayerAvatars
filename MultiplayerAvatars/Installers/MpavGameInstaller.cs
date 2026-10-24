@@ -1,4 +1,5 @@
-﻿using MultiplayerAvatars.Avatars;
+﻿using BeatSaber.AvatarCore;
+using MultiplayerAvatars.Avatars;
 using SiraUtil.Extras;
 using SiraUtil.Objects.Multiplayer;
 using UnityEngine;
@@ -17,7 +18,7 @@ namespace MultiplayerAvatars.Installers
         private MultiplayerConnectedPlayerFacade DecorateConnectedPlayerFacade(MultiplayerConnectedPlayerFacade original)
         {
             original.GetComponentInChildren<MultiplayerAvatarPoseController>().gameObject.AddComponent<CustomAvatarController>();
-            GameObject.Destroy(original.GetComponentInChildren<AvatarPoseController>().gameObject.GetComponent<Animator>());
+            GameObject.Destroy(original.GetComponentInChildren<MultiplayerAvatarPoseController>().gameObject.GetComponent<Animator>());
             return original;
         }
     }

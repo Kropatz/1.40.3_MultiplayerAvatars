@@ -2,10 +2,12 @@
 using CustomAvatar.Player;
 using MultiplayerAvatars.Providers;
 using MultiplayerCore.Networking;
+using HarmonyLib;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Reflection;
 using Zenject;
 
 namespace MultiplayerAvatars.Networking
@@ -22,6 +24,8 @@ namespace MultiplayerAvatars.Networking
         private readonly CustomAvatarsProvider _customAvatarsProvider;
         private readonly IMultiplayerSessionManager _sessionManager;
         private readonly SiraLog _logger;
+
+        private static readonly MethodInfo GetCurrentAvatarFileName = AccessTools.PropertyGetter(typeof(PlayerAvatarManager), "currentAvatarFileName");
 
         public CustomAvatarManager(
             MpPacketSerializer packetSerializer,
@@ -44,8 +48,8 @@ namespace MultiplayerAvatars.Networking
             _sessionManager.playerConnectedEvent += HandlePlayerConnected;
             _sessionManager.playerDisconnectedEvent += HandlePlayerDisconnected;
 
-            Task.Run(() => UpdateAvatarHash(_playerAvatarManager.currentlySpawnedAvatar.prefab.fullPath));
-            _localPlayerAvatar.Scale = _playerAvatarManager.currentlySpawnedAvatar?.scale ?? 1f;
+            UpdateCurrentAvatarHash();
+            _localPlayerAvatar.Scale = _playerAvatarManager.scale;
 
             _packetSerializer.RegisterCallback<CustomAvatarPacket>(HandleCustomAvatarPacket);
         }
@@ -76,7 +80,7 @@ namespace MultiplayerAvatars.Networking
                 return;
             }
 
-            Task.Run(() => UpdateAvatarHash(avatar.prefab.fullPath));
+            UpdateCurrentAvatarHash();
         }
 
         private void HandleAvatarScaleChanged(float scale)
@@ -100,6 +104,18 @@ namespace MultiplayerAvatars.Networking
         private void HandlePlayerDisconnected(IConnectedPlayer player)
         {
             _connectedPlayerAvatars.Remove(player.userId);
+        }
+
+        private void UpdateCurrentAvatarHash()
+        {
+            var fileName = (string?)GetCurrentAvatarFileName.Invoke(_playerAvatarManager, null);
+
+            if (string.IsNullOrEmpty(fileName))
+                return;
+
+            var path = System.IO.Path.Combine(PlayerAvatarManager.kCustomAvatarsPath, fileName);
+
+            _ = Task.Run(() => UpdateAvatarHash(path));
         }
 
         private async Task UpdateAvatarHash(string path)

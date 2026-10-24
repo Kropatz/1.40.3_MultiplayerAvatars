@@ -6,6 +6,9 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BeatSaber.AvatarCore;
+using BeatSaber.BeatAvatarSDK;
+using IPA.Utilities.Async;
 using UnityEngine;
 using Zenject;
 
@@ -22,7 +25,7 @@ namespace MultiplayerAvatars.Avatars
         private IConnectedPlayer _connectedPlayer = null!;
         private CustomAvatarManager _customAvatarManager = null!;
         private AvatarProviderService _avatarProvider = null!;
-        private AvatarPoseController _poseController = null!;
+        private BeatAvatarPoseController _poseController = null!;
         private MultiplayerAvatarInput _avatarInput = null!;
         private SiraLog _logger = null!;
 
@@ -32,17 +35,18 @@ namespace MultiplayerAvatars.Avatars
             IConnectedPlayer connectedPlayer,
             CustomAvatarManager customAvatarManager,
             AvatarProviderService avatarProvider,
-            AvatarPoseController poseController,
+            BeatAvatarPoseController beatPoseController,
+            MultiplayerAvatarPoseController mpPoseController,
             SiraLog logger)
         {
             _avatarSpawner = avatarSpawner;
             _avatarProvider = avatarProvider;
             _connectedPlayer = connectedPlayer;
             _customAvatarManager = customAvatarManager;
-            _poseController = poseController;
+            _poseController = beatPoseController;
             _logger = logger;
 
-            _avatarInput = new MultiplayerAvatarInput(poseController);
+            _avatarInput = new MultiplayerAvatarInput(beatPoseController, mpPoseController);
         }
 
         public void OnEnable()
@@ -77,7 +81,7 @@ namespace MultiplayerAvatars.Avatars
                 return;
             }
 
-            HMMainThreadDispatcher.instance.Enqueue(() => CreateAvatar(avatarPrefab));
+            await UnityMainThreadTaskScheduler.Factory.StartNew(() => CreateAvatar(avatarPrefab));
         }
 
         private void CreateAvatar(AvatarPrefab avatar)
@@ -91,7 +95,7 @@ namespace MultiplayerAvatars.Avatars
             var avatarIk = _spawnedAvatar.GetComponent<AvatarIK>();
             if (avatarIk != null)
                 avatarIk.isLocomotionEnabled = true;
-            _spawnedAvatar.scale = _avatarPacket.Scale;
+            _spawnedAvatar.transform.localScale = Vector3.one * _avatarPacket.Scale;
         }
     }
 }

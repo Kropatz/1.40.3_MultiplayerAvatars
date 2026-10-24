@@ -1,3 +1,5 @@
+using BeatSaber.AvatarCore;
+using BeatSaber.BeatAvatarSDK;
 using CustomAvatar.Avatar;
 using CustomAvatar.Tracking;
 using IPA.Utilities;
@@ -8,7 +10,7 @@ namespace MultiplayerAvatars.Avatars
 {
     internal class MultiplayerAvatarInput : IAvatarInput
     {
-        private readonly AvatarPoseController _poseController;
+        private readonly BeatAvatarPoseController _poseController;
 
         private Transform headTransform;
         private Transform rightHandTransform;
@@ -19,15 +21,15 @@ namespace MultiplayerAvatars.Avatars
         private Pose rightHand = new Pose();
         private Pose leftHand = new Pose();
 
-        internal MultiplayerAvatarInput(AvatarPoseController poseController)
+        internal MultiplayerAvatarInput(BeatAvatarPoseController beatPoseController, MultiplayerAvatarPoseController mpPoseController)
         {
-            _poseController = poseController;
+            _poseController = beatPoseController;
 
-            _poseController.didUpdatePoseEvent += OnInputChanged;
-            headTransform = _poseController.GetField<Transform, AvatarPoseController>("_headTransform");
-            rightHandTransform = _poseController.GetField<Transform, AvatarPoseController>("_rightHandTransform");
-            leftHandTransform = _poseController.GetField<Transform, AvatarPoseController>("_leftHandTransform");
-            bodyTransform = _poseController.GetField<Transform, AvatarPoseController>("_bodyTransform");
+            mpPoseController.didUpdatePoseEvent += OnInputChanged;
+            headTransform = _poseController.GetField<Transform, BeatAvatarPoseController>("_headTransform");
+            rightHandTransform = _poseController.GetField<Transform, BeatAvatarPoseController>("_rightHandTransform");
+            leftHandTransform = _poseController.GetField<Transform, BeatAvatarPoseController>("_leftHandTransform");
+            bodyTransform = _poseController.GetField<Transform, BeatAvatarPoseController>("_bodyTransform");
 
             SetEnabled(true);
         }
@@ -102,7 +104,7 @@ namespace MultiplayerAvatars.Avatars
                     transform = leftHandTransform;
                     return true;
                 default:
-                    transform = null;
+                    transform = bodyTransform;
                     return false;
             }
         }
