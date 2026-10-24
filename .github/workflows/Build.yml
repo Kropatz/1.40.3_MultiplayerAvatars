@@ -68,6 +68,12 @@ jobs:
           ls -lh Refs/Plugins/
           ls -lh Refs/Libs/
 
+      - name: Inspect CustomAvatar API
+        shell: bash
+        run: |
+          echo "=== CustomAvatar API symbols ==="
+          strings Refs/Plugins/CustomAvatar.dll | grep -Ei 'AvatarPoseController|IAvatarInput|PoseController|AvatarInput|ControllerNode|DeviceUse|AvatarSpawner|SpawnedAvatar|AvatarIK|Tracking' | sort -u || true
+
       - name: Build Solution
         run: |
           ROOT_DIR=$(pwd)
