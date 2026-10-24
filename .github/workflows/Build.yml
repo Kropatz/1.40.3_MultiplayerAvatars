@@ -50,8 +50,9 @@ jobs:
 
       - name: Clone and Build MultiplayerCore From Source
         run: |
+          ROOT_DIR=$(pwd)
           git clone --depth 1 https://github.com/Goobwabber/MultiplayerCore.git temp_mpcore
-          dotnet build temp_mpcore/MultiplayerCore/MultiplayerCore.csproj -c Release
+          dotnet build temp_mpcore/MultiplayerCore/MultiplayerCore.csproj -c Release /p:BeatSaberDir="$ROOT_DIR/Refs"
           
           # Copy the freshly compiled MultiplayerCore.dll into place
           find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/ \;
@@ -66,4 +67,6 @@ jobs:
           ls -lh Refs/Plugins/
 
       - name: Build Solution
-        run: dotnet build MultiplayerAvatars.sln -c Release
+        run: |
+          ROOT_DIR=$(pwd)
+          dotnet build MultiplayerAvatars.sln -c Release /p:BeatSaberDir="$ROOT_DIR/Refs"
