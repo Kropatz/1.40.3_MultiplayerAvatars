@@ -28,10 +28,14 @@ jobs:
     - name: Move References into Refs/ Folder
       run: |
         mkdir -p Refs
-        # Move the downloaded game files into Refs/ so the .csproj can find them
-        [ -d "Beat Saber_Data" ] && mv "Beat Saber_Data" Refs/
-        [ -d "Libs" ] && mv "Libs" Refs/
-        [ -d "Plugins" ] && mv "Plugins" Refs/
+        # Find where Beat Saber_Data was extracted and move it into Refs/
+        find . -type d -name "Beat Saber_Data" -maxdepth 3 ! -path "./Refs*" -exec mv {} Refs/ \;
+        find . -type d -name "Libs" -maxdepth 3 ! -path "./Refs*" -exec mv {} Refs/ \;
+        find . -type d -name "Plugins" -maxdepth 3 ! -path "./Refs*" -exec mv {} Refs/ \;
+        
+        # Fallback check to see what's in Refs now
+        echo "Contents of Refs:"
+        ls -la Refs/
 
     - name: Download SiraUtil & CustomAvatar
       run: |
