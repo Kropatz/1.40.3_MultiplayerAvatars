@@ -12,64 +12,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
-    - name: Initialize Beat Saber References
-      uses: beat-forge/init-beatsaber@v1
-      with:
-        manifest: 'MultiplayerAvatars/manifest.json'
+      - name: Initialize Beat Saber References
+        uses: beat-forge/init-beatsaber@v1
+        with:
+          manifest: 'MultiplayerAvatars/manifest.json'
 
-    - name: Move References into Refs/ Folder
-      run: |
-        mkdir -p Refs
-        # Find where Beat Saber_Data was extracted and move it into Refs/
-        find . -type d -name "Beat Saber_Data" -maxdepth 3 ! -path "./Refs*" -exec mv {} Refs/ \;
-        find . -type d -name "Libs" -maxdepth 3 ! -path "./Refs*" -exec mv {} Refs/ \;
-        find . -type d -name "Plugins" -maxdepth 3 ! -path "./Refs*" -exec mv {} Refs/ \;
-        
-        # Fallback check to see what's in Refs now
-        echo "Contents of Refs:"
-        ls -la Refs/
+      - name: Download Dependencies and Refs
+        run: |
+          mkdir -p Refs/Plugins
+          mkdir -p temp_deps
+          
+          echo "Downloading SiraUtil..."
+          curl -sSL "https://github.com/Auros/SiraUtil/releases/download/v3.4.0/SiraUtil-v3.4.0+bs.1.42.0.zip" -o temp_deps/SiraUtil.zip
+          unzip -q -o temp_deps/SiraUtil.zip -d temp_deps/sira/
+          
+          echo "Downloading CustomAvatar..."
+          curl -sSL "https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip
+          unzip -q -o temp_deps/CustomAvatar.zip -d temp_deps/ca/
+          
+          # Copy DLLs to Refs and Refs/Plugins
+          find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/ \;
+          find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/Plugins/ \;
+          
+          find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/ \;
+          find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/Plugins/ \;
+          
+          # Clean up temp files
+          rm -rf temp_deps
 
-    - name: Download SiraUtil & CustomAvatar
-      run: |
-        mkdir -p Refs/Plugins
-        mkdir -p temp_deps
+      - name: Clone and Build MultiplayerCore From Source
+        run: |
+          git clone --depth 1 https://github.com/Goobwabber/MultiplayerCore.git temp_mpcore
+          dotnet build temp_mpcore/MultiplayerCore/MultiplayerCore.csproj -c Release
+          
+          # Copy the freshly compiled MultiplayerCore.dll into place
+          find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/ \;
+          find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/Plugins/ \;
+          
+          # Clean up temp mpcore folder
+          rm -rf temp_mpcore
 
-        echo "Downloading SiraUtil..."
-        curl -sSL "https://github.com/Auros/SiraUtil/releases/download/v3.4.0/SiraUtil-v3.4.0+bs.1.42.0.zip" -o temp_deps/SiraUtil.zip
-        unzip -q -o temp_deps/SiraUtil.zip -d temp_deps/sira/
+      - name: Verify All DLL Sizes in Refs
+        run: |
+          ls -lh Refs/
+          ls -lh Refs/Plugins/
 
-        echo "Downloading CustomAvatar..."
-        curl -sSL "https://nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip || \
-        curl -sSL "https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip
-        unzip -q -o temp_deps/CustomAvatar.zip -d temp_deps/ca/
-
-        find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/ \;
-        find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/Plugins/ \;
-
-        find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/ \;
-        find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/Plugins/ \;
-
-    - name: Clone and Build MultiplayerCore From Source
-      run: |
-        git clone --depth 1 https://github.com/Goobwabber/MultiplayerCore.git temp_mpcore
-        dotnet build temp_mpcore/MultiplayerCore/MultiplayerCore.csproj -c Release
-        
-        # Copy the freshly compiled MultiplayerCore.dll into place
-        find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/ \;
-        find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/Plugins/ \;
-
-    - name: Verify All DLL Sizes in Refs
-      run: |
-        ls -lh Refs/
-        ls -lh Refs/Plugins/
-
-    - name: Build Solution
-      run: dotnet build MultiplayerAvatars.sln -c Release
+      - name: Build Solution
+        run: dotnet build MultiplayerAvatars.sln -c Release
