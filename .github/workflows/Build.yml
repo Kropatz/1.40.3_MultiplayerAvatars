@@ -56,48 +56,15 @@ jobs:
           echo "Downloading BeatSaverSharp..."
           curl -sSL "https://github.com/Auros/BeatSaverSharper/releases/download/3.4.5/BeatSaverSharp.Beat.Saber.zip" -o temp_deps/BeatSaverSharp.zip
           unzip -q -o temp_deps/BeatSaverSharp.zip -d temp_deps/bss/
+          echo "Downloading FinalIK..."
+          curl -sSL "https://beatmods.com/cdn/mod/0dc804c710ba91da074c70fbe5785a84.zip" -o temp_deps/FinalIK.zip
+          unzip -q -o temp_deps/FinalIK.zip -d temp_deps/finalik/
           
           cp temp_deps/bss/Libs/BeatSaverSharp.dll Refs/Libs/.
+          cp temp_deps/finalik/Libs/FinalIK.dll Refs/Libs/.
           
           # Clean up temp files
           rm -rf temp_deps
-
-      - name: Verify All DLL Sizes in Refs
-        run: |
-          ls -lh Refs/
-          ls -lh Refs/Plugins/
-          ls -lh Refs/Libs/ 
-            
-      - name: Locate AvatarPoseController
-        shell: bash
-        run: |
-          echo "=== Installing ILSpy ==="
-          dotnet tool install ilspycmd \
-            --tool-path "$RUNNER_TEMP/tools"
-
-          ILSPY="$RUNNER_TEMP/tools/ilspycmd"
-
-          for dll in \
-            "Refs/Beat Saber_Data/Managed/BeatSaber.BeatAvatarAdapter.dll" \
-            "Refs/Beat Saber_Data/Managed/BeatSaber.AvatarCore.dll" \
-            "Refs/Beat Saber_Data/Managed/BeatSaber.BeatAvatarSDK.dll"
-          do
-            echo "=== Searching $dll ==="
-
-            types=$("$ILSPY" -l c "$dll" |
-              grep -i 'AvatarPoseController' || true)
-
-            if [ -z "$types" ]; then
-              echo "No matching class found in this assembly."
-            else
-              while IFS= read -r line; do
-                type="${line#* }"
-
-                echo "=== Class definition: $type ==="
-                "$ILSPY" -t "$type" "$dll" || true
-              done <<< "$types"
-            fi
-          done
 
       - name: Build Solution
         run: |
