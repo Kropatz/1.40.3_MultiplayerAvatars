@@ -66,13 +66,40 @@ jobs:
         run: |
           ls -lh Refs/
           ls -lh Refs/Plugins/
-          ls -lh Refs/Libs/
-
-      - name: Inspect CustomAvatar API
+          ls -lh Refs/Libs/ 
+            
+      - name: Inspect CustomAvatar tracking API
         shell: bash
         run: |
-          echo "=== CustomAvatar API symbols ==="
-          strings Refs/Plugins/CustomAvatar.dll | grep -Ei 'AvatarPoseController|IAvatarInput|PoseController|AvatarInput|ControllerNode|DeviceUse|AvatarSpawner|SpawnedAvatar|AvatarIK|Tracking' | sort -u || true
+          echo "=== Searching all assemblies for old controller ==="
+          find Refs -type f -name '*.dll' -print0 |
+          while IFS= read -r -d '' dll; do
+            if strings "$dll" 2>/dev/null |
+              grep -q 'AvatarPoseController'; then
+              echo "Found in: $dll"
+            fi
+          done
+
+          echo "=== Installing ILSpy command-line tool ==="
+          dotnet tool install ilspycmd \
+            --tool-path "$RUNNER_TEMP/tools"
+
+          ILSPY="$RUNNER_TEMP/tools/ilspycmd"
+
+          echo "=== Relevant CustomAvatar types ==="
+          "$ILSPY" -l c Refs/Plugins/CustomAvatar.dll |
+            grep -Ei \
+            'TrackingRig|AvatarTransformTracking|AvatarPoseController|IAvatarInput|ControllerNode' || true
+
+          for type in \
+            CustomAvatar.Tracking.TrackingRig \
+            CustomAvatar.Tracking.AvatarTransformTracking \
+            CustomAvatar.Tracking.IAvatarInput; do
+
+            echo "=== Decompiling $type ==="
+            "$ILSPY" -t "$type" \
+              Refs/Plugins/CustomAvatar.dll || true
+          done
 
       - name: Build Solution
         run: |
