@@ -25,7 +25,7 @@ jobs:
       with:
         manifest: 'MultiplayerAvatars/manifest.json'
 
-    - name: Download & Extract Mod Dependencies
+    - name: Download SiraUtil & CustomAvatar
       run: |
         mkdir -p Refs/Plugins
         mkdir -p temp_deps
@@ -34,25 +34,27 @@ jobs:
         curl -sSL "https://github.com/Auros/SiraUtil/releases/download/v3.4.0/SiraUtil-v3.4.0+bs.1.42.0.zip" -o temp_deps/SiraUtil.zip
         unzip -q -o temp_deps/SiraUtil.zip -d temp_deps/sira/
 
-        echo "Downloading MultiplayerCore..."
-        curl -sSL "https://github.com/Goobwabber/MultiplayerCore/releases/latest/download/MultiplayerCore.zip" -o temp_deps/MultiplayerCore.zip || curl -sSL "https://github.com/Goobwabber/MultiplayerCore/releases/download/v1.5.2/MultiplayerCore.zip" -o temp_deps/MultiplayerCore.zip || true
-        unzip -q -o temp_deps/MultiplayerCore.zip -d temp_deps/mpcore/ || true
-
         echo "Downloading CustomAvatar..."
         curl -sSL "https://github.com/nicoco007/BeatSaberCustomAvatars/releases/download/v5.4.10/CustomAvatar-v5.4.10+bs.1.40.0.zip" -o temp_deps/CustomAvatar.zip
         unzip -q -o temp_deps/CustomAvatar.zip -d temp_deps/ca/
 
-        echo "Distributing extracted DLLs..."
         find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/ \;
         find temp_deps/ -name "SiraUtil.dll" -exec cp {} Refs/Plugins/ \;
-
-        find temp_deps/ -name "MultiplayerCore.dll" -exec cp {} Refs/ \;
-        find temp_deps/ -name "MultiplayerCore.dll" -exec cp {} Refs/Plugins/ \;
 
         find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/ \;
         find temp_deps/ -name "CustomAvatar.dll" -exec cp {} Refs/Plugins/ \;
 
-        echo "Verifying all downloaded DLL sizes in Refs:"
+    - name: Clone and Build MultiplayerCore From Source
+      run: |
+        git clone --depth 1 https://github.com/Goobwabber/MultiplayerCore.git temp_mpcore
+        dotnet build temp_mpcore/MultiplayerCore/MultiplayerCore.csproj -c Release
+        
+        # Copy the freshly compiled MultiplayerCore.dll into place
+        find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/ \;
+        find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/Plugins/ \;
+
+    - name: Verify All DLL Sizes in Refs
+      run: |
         ls -lh Refs/
         ls -lh Refs/Plugins/
 
