@@ -46,34 +46,27 @@ jobs:
           curl -sSL "https://github.com/monkeymanboy/BeatSaberMarkupLanguage/releases/download/v1.14.2/BeatSaberMarkupLanguage-v1.14.2+bs.1.41.1-RELEASE.zip" -o temp_deps/BSML.zip
           unzip -q -o temp_deps/BSML.zip -d temp_deps/bsml/
 
+          echo "Downloading MultiplayerCore..."
+          curl -sSL "https://github.com/Goobwabber/MultiplayerCore/releases/download/v1.6.2/MultiplayerCore-1.6.2-bs1.40.0-0f029ed.zip" -o temp_deps/MultiplayerCore.zip
+          unzip -q -o temp_deps/MultiplayerCore.zip -d temp_deps/mpcore/
+
+          # Automatically copy all DLL files from all downloaded dependencies into Refs/Plugins
+          find temp_deps/ -name "*.dll" -exec cp {} Refs/Plugins/ \;
+
           echo "Downloading BeatSaverSharp..."
           curl -sSL "https://github.com/Auros/BeatSaverSharper/releases/download/3.4.5/BeatSaverSharp.Beat.Saber.zip" -o temp_deps/BeatSaverSharp.zip
           unzip -q -o temp_deps/BeatSaverSharp.zip -d temp_deps/bss/
           
-          # Automatically copy all DLL files from all downloaded dependencies into Refs and Refs/Plugins
-          find temp_deps/ -name "*.dll" -exec cp {} Refs/ \;
-          find temp_deps/ -name "*.dll" -exec cp {} Refs/Plugins/ \;
+          cp temp_deps/bss/Libs/BeatSaverSharp.dll Refs/Libs/.
           
           # Clean up temp files
           rm -rf temp_deps
-
-      - name: Clone and Build MultiplayerCore From Source
-        run: |
-          ROOT_DIR=$(pwd)
-          git clone --depth 1 https://github.com/Goobwabber/MultiplayerCore.git temp_mpcore
-          dotnet build temp_mpcore/MultiplayerCore/MultiplayerCore.csproj -c Release /p:BeatSaberDir="$ROOT_DIR/Refs"
-          
-          # Copy the freshly compiled MultiplayerCore.dll into place
-          find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/ \;
-          find temp_mpcore/ -name "MultiplayerCore.dll" -path "*/bin/Release/*" -exec cp {} Refs/Plugins/ \;
-          
-          # Clean up temp mpcore folder
-          rm -rf temp_mpcore
 
       - name: Verify All DLL Sizes in Refs
         run: |
           ls -lh Refs/
           ls -lh Refs/Plugins/
+          ls -lh Refs/Libs/
 
       - name: Build Solution
         run: |
