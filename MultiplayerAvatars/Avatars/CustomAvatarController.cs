@@ -160,12 +160,13 @@ namespace MultiplayerAvatars.Avatars
             DestroyCustomAvatar();
 
             // In gameplay the parenting transform carries a timeline-driven Animator that breaks the custom avatar's IK,
-            // so spawn next to it instead; the IK targets are world-space transforms either way
-            var parent = _usePoseControllerTransforms
-                ? _avatarController.transform
-                : ParentingTransform(ref _avatarController) ?? _avatarController.transform;
+            // so spawn next to it instead; the IK targets are world-space transforms either way.
+            // Elsewhere (e.g. the big hologram avatar, which scales its container) stay inside it.
+            var parent = ParentingTransform(ref _avatarController);
+            if (parent == null || parent.GetComponent<Animator>() != null)
+                parent = _avatarController.transform;
             _avatarInput = _usePoseControllerTransforms
-                ? MultiplayerAvatarInput.FromPoseController(GetComponent<MultiplayerAvatarPoseController>())
+                ? MultiplayerAvatarInput.FromPoseController(avatar, GetComponent<MultiplayerAvatarPoseController>(), MirrorPoseDataProvider.IsMirroring(gameObject))
                 : null;
             if (_usePoseControllerTransforms && _avatarInput == null)
                 _logger?.Warn($"No usable {nameof(MultiplayerAvatarPoseController)} on '{name}', falling back to pose data");
@@ -173,7 +174,7 @@ namespace MultiplayerAvatars.Avatars
             {
                 // MultiplayerMirror swaps the controller's pose provider after creation, so use whatever it holds now
                 var poseDataProvider = PoseDataProvider(ref _avatarController) ?? _poseDataProvider;
-                _avatarInput = new MultiplayerAvatarInput(poseDataProvider, parent, MirrorPoseDataProvider.GetSwapHands(poseDataProvider));
+                _avatarInput = new MultiplayerAvatarInput(avatar, poseDataProvider, parent, MirrorPoseDataProvider.GetSwapHands(poseDataProvider));
             }
             _spawnedAvatar = _avatarSpawner.SpawnAvatar(avatar, _avatarInput, parent);
             var avatarIk = _spawnedAvatar.GetComponent<AvatarIK>();
@@ -201,8 +202,10 @@ namespace MultiplayerAvatars.Avatars
 
         private void ApplyScale()
         {
+            var scale = _avatarPacket.Scale > 0f ? _avatarPacket.Scale : 1f;
             if (_spawnedAvatar != null)
-                _spawnedAvatar.transform.localScale = Vector3.one * (_avatarPacket.Scale > 0f ? _avatarPacket.Scale : 1f);
+                _spawnedAvatar.transform.localScale = Vector3.one * scale;
+            _avatarInput?.SetScale(scale);
         }
 
         private void DestroyCustomAvatar()
