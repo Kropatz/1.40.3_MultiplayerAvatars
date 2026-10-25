@@ -21,6 +21,8 @@ namespace MultiplayerAvatars.Avatars
             = FieldAccessor<AvatarController, Transform>.GetAccessor("_parentingTransform");
 
         private CustomAvatarPacket _avatarPacket = new();
+        // Tracked separately because the local player's packet is mutated in place
+        private string? _requestedHash;
         private SpawnedAvatar? _spawnedAvatar;
         private MultiplayerAvatarInput? _avatarInput;
         private Renderer[]? _hiddenRenderers;
@@ -58,7 +60,7 @@ namespace MultiplayerAvatars.Avatars
             _customAvatarManager = customAvatarManager;
             _avatarProvider = avatarProvider;
             _poseDataProvider = poseDataProvider;
-            _usePoseControllerTransforms = GetComponent<LobbyAvatarInstaller>() == null;
+            _usePoseControllerTransforms = GetComponent<LobbyAvatarInstaller>() == null && GetComponent<MultiplayerAvatarPoseController>() != null;
 
             if (_avatarController == null || _avatarSpawner == null || _connectedPlayer == null
                 || _customAvatarManager == null || _avatarProvider == null || _poseDataProvider == null)
@@ -108,22 +110,23 @@ namespace MultiplayerAvatars.Avatars
             if (player.userId != _connectedPlayer.userId)
                 return;
 
-            var previousHash = _avatarPacket.Hash;
             _avatarPacket = packet;
 
             if (packet.Hash == CustomAvatarPacket.NoAvatarHash)
             {
+                _requestedHash = null;
                 _loadVersion++;
                 DestroyCustomAvatar();
                 return;
             }
 
-            if (_spawnedAvatar != null && previousHash == packet.Hash)
+            if (_requestedHash == packet.Hash)
             {
                 ApplyScale();
                 return;
             }
 
+            _requestedHash = packet.Hash;
             _ = LoadAvatar(packet.Hash, ++_loadVersion);
         }
 
