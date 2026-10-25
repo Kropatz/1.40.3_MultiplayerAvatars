@@ -5,6 +5,7 @@ using MultiplayerAvatars.Networking;
 using MultiplayerAvatars.Providers;
 using SiraUtil.Logging;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -153,7 +154,11 @@ namespace MultiplayerAvatars.Avatars
         {
             DestroyCustomAvatar();
 
-            var parent = ParentingTransform(ref _avatarController) ?? _avatarController.transform;
+            // In gameplay the parenting transform carries a timeline-driven Animator that breaks the custom avatar's IK,
+            // so spawn next to it instead; the IK targets are world-space transforms either way
+            var parent = _usePoseControllerTransforms
+                ? _avatarController.transform
+                : ParentingTransform(ref _avatarController) ?? _avatarController.transform;
             _avatarInput = _usePoseControllerTransforms
                 ? MultiplayerAvatarInput.FromPoseController(GetComponent<MultiplayerAvatarPoseController>())
                 : null;
@@ -179,7 +184,9 @@ namespace MultiplayerAvatars.Avatars
             _avatarInput.TryGetTransform(CustomAvatar.Tracking.DeviceUse.RightHand, out var rightHand);
             _logger?.Info($"Avatar diagnostics for '{_connectedPlayer.userName}': " +
                 $"head={head.position} left={leftHand.position} right={rightHand.position} " +
-                $"avatarScale={_spawnedAvatar.transform.lossyScale} active={_spawnedAvatar.gameObject.activeInHierarchy}");
+                $"avatarScale={_spawnedAvatar.transform.lossyScale} active={_spawnedAvatar.gameObject.activeInHierarchy} " +
+                $"root={_spawnedAvatar.transform.position} headBone={(_spawnedAvatar.head != null ? _spawnedAvatar.head.position.ToString() : "none")} " +
+                $"renderers={_spawnedAvatar.GetComponentsInChildren<Renderer>().Count(r => r.enabled && r.isVisible)}/{_spawnedAvatar.GetComponentsInChildren<Renderer>(true).Length} visible");
         }
 
         private void ApplyScale()
