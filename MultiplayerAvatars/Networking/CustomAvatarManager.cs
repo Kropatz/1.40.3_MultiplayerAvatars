@@ -66,6 +66,8 @@ namespace MultiplayerAvatars.Networking
 
         public CustomAvatarPacket GetPlayerAvatarPacket(string userId)
         {
+            if (userId == _sessionManager.localPlayer?.userId)
+                return _localPlayerAvatar;
             if (!_connectedPlayerAvatars.ContainsKey(userId))
                 return new();
             return _connectedPlayerAvatars[userId];
@@ -77,6 +79,7 @@ namespace MultiplayerAvatars.Networking
             {
                 _localPlayerAvatar = new();
                 _sessionManager.Send(_localPlayerAvatar);
+                NotifyLocalAvatarChanged();
                 return;
             }
 
@@ -87,6 +90,15 @@ namespace MultiplayerAvatars.Networking
         {
             _localPlayerAvatar.Scale = scale;
             _sessionManager.Send(_localPlayerAvatar);
+            NotifyLocalAvatarChanged();
+        }
+
+        // Lets local player avatars (results pedestal, lobby mirror) follow avatar changes
+        private void NotifyLocalAvatarChanged()
+        {
+            var localPlayer = _sessionManager.localPlayer;
+            if (localPlayer != null)
+                avatarReceived?.Invoke(localPlayer, _localPlayerAvatar);
         }
 
         private void HandleCustomAvatarPacket(CustomAvatarPacket packet, IConnectedPlayer player)
@@ -129,6 +141,7 @@ namespace MultiplayerAvatars.Networking
 
             _localPlayerAvatar.Hash = hash;
             _sessionManager.Send(_localPlayerAvatar);
+            NotifyLocalAvatarChanged();
         }
     }
 }
