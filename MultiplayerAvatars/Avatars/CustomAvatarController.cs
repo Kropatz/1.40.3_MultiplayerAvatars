@@ -19,6 +19,8 @@ namespace MultiplayerAvatars.Avatars
     {
         private static readonly FieldAccessor<AvatarController, Transform>.Accessor ParentingTransform
             = FieldAccessor<AvatarController, Transform>.GetAccessor("_parentingTransform");
+        private static readonly FieldAccessor<AvatarController, IAvatarPoseDataProvider>.Accessor PoseDataProvider
+            = FieldAccessor<AvatarController, IAvatarPoseDataProvider>.GetAccessor("_poseDataProvider");
 
         private CustomAvatarPacket _avatarPacket = new();
         // Tracked separately because the local player's packet is mutated in place
@@ -107,7 +109,7 @@ namespace MultiplayerAvatars.Avatars
 
         private void HandleAvatarReceived(IConnectedPlayer player, CustomAvatarPacket packet)
         {
-            if (player.userId != _connectedPlayer.userId)
+            if (CustomAvatarManager.ResolveUserId(player.userId) != CustomAvatarManager.ResolveUserId(_connectedPlayer.userId))
                 return;
 
             _avatarPacket = packet;
@@ -167,7 +169,12 @@ namespace MultiplayerAvatars.Avatars
                 : null;
             if (_usePoseControllerTransforms && _avatarInput == null)
                 _logger?.Warn($"No usable {nameof(MultiplayerAvatarPoseController)} on '{name}', falling back to pose data");
-            _avatarInput ??= new MultiplayerAvatarInput(_poseDataProvider, parent);
+            if (_avatarInput == null)
+            {
+                // MultiplayerMirror swaps the controller's pose provider after creation, so use whatever it holds now
+                var poseDataProvider = PoseDataProvider(ref _avatarController) ?? _poseDataProvider;
+                _avatarInput = new MultiplayerAvatarInput(poseDataProvider, parent, MirrorPoseDataProvider.GetSwapHands(poseDataProvider));
+            }
             _spawnedAvatar = _avatarSpawner.SpawnAvatar(avatar, _avatarInput, parent);
             var avatarIk = _spawnedAvatar.GetComponent<AvatarIK>();
             if (avatarIk != null)

@@ -64,8 +64,15 @@ namespace MultiplayerAvatars.Networking
             _packetSerializer.UnregisterCallback<CustomAvatarPacket>();
         }
 
+        // MultiplayerMirror shows the local player through a mock player with a prefixed user id
+        private const string MirrorUserIdPrefix = "Mirror#";
+
+        public static string ResolveUserId(string userId)
+            => userId.StartsWith(MirrorUserIdPrefix) ? userId.Substring(MirrorUserIdPrefix.Length) : userId;
+
         public CustomAvatarPacket GetPlayerAvatarPacket(string userId)
         {
+            userId = ResolveUserId(userId);
             if (userId == _sessionManager.localPlayer?.userId)
                 return _localPlayerAvatar;
             if (!_connectedPlayerAvatars.ContainsKey(userId))

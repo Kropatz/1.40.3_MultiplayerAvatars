@@ -18,6 +18,7 @@ namespace MultiplayerAvatars.Avatars
             = FieldAccessor<MultiplayerAvatarPoseController, Transform>.GetAccessor("_rightSaberTransform");
 
         private readonly IAvatarPoseDataProvider? _poseDataProvider;
+        private readonly Func<bool>? _swapHands;
 
         private readonly Transform? _root;
         private readonly Transform _head;
@@ -25,9 +26,11 @@ namespace MultiplayerAvatars.Avatars
         private readonly Transform _rightHand;
 
         // Keeps our own transforms in the space the base game avatar is posed in, updated from the pose data provider
-        internal MultiplayerAvatarInput(IAvatarPoseDataProvider poseDataProvider, Transform parent)
+        // swapHands: reflected poses keep left/right as-is, so a humanoid avatar needs them swapped to look like a reflection
+        internal MultiplayerAvatarInput(IAvatarPoseDataProvider poseDataProvider, Transform parent, Func<bool>? swapHands = null)
         {
             _poseDataProvider = poseDataProvider;
+            _swapHands = swapHands;
 
             _root = new GameObject(nameof(MultiplayerAvatarInput)).transform;
             _root.SetParent(parent, false);
@@ -109,8 +112,11 @@ namespace MultiplayerAvatars.Avatars
             if (_root == null)
                 return;
             _head.SetLocalPositionAndRotation(pose.headPose.position, Normalized(pose.headPose.rotation));
-            _leftHand.SetLocalPositionAndRotation(pose.leftHandPose.position, Normalized(pose.leftHandPose.rotation));
-            _rightHand.SetLocalPositionAndRotation(pose.rightHandPose.position, Normalized(pose.rightHandPose.rotation));
+            var swap = _swapHands != null && _swapHands();
+            var leftHandPose = swap ? pose.rightHandPose : pose.leftHandPose;
+            var rightHandPose = swap ? pose.leftHandPose : pose.rightHandPose;
+            _leftHand.SetLocalPositionAndRotation(leftHandPose.position, Normalized(leftHandPose.rotation));
+            _rightHand.SetLocalPositionAndRotation(rightHandPose.position, Normalized(rightHandPose.rotation));
         }
 
         // Poses default to an all-zero quaternion before the first sync state arrives
