@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>MultiplayerAvatars</AssemblyName>
-    <AssemblyVersion>0.2.0</AssemblyVersion>
+    <AssemblyVersion>0.2.1</AssemblyVersion>
     <TargetFramework>net48</TargetFramework>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>

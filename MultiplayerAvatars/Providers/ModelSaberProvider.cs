@@ -1,5 +1,6 @@
 ﻿using CustomAvatar.Avatar;
 using CustomAvatar.Player;
+using IPA.Utilities.Async;
 using MultiplayerAvatars.Providers.Abstractions;
 using MultiplayerAvatars.Providers.Attributes;
 using MultiplayerAvatars.Providers.ModelSaber;
@@ -51,7 +52,8 @@ namespace MultiplayerAvatars.Providers
 
             _customAvatarsProvider.AddAvatar(avatarPath, hash);
 
-            return await _avatarLoader.LoadFromFileAsync(avatarPath, null, cancellationToken);
+            // Asset bundles must be loaded from the main thread
+            return await UnityMainThreadTaskScheduler.Factory.StartNew(() => _avatarLoader.LoadFromFileAsync(avatarPath, null, cancellationToken)).Unwrap();
         }
 
         public async Task<ModelInfo?> FetchModelInfoByHash(string hash, CancellationToken cancellationToken)

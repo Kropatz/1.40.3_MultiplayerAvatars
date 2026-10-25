@@ -115,7 +115,7 @@ namespace MultiplayerAvatars.Networking
 
             var path = System.IO.Path.Combine(PlayerAvatarManager.kCustomAvatarsPath, fileName);
 
-            _ = Task.Run(() => UpdateAvatarHash(path));
+            _ = UpdateAvatarHash(path);
         }
 
         private async Task UpdateAvatarHash(string path)
