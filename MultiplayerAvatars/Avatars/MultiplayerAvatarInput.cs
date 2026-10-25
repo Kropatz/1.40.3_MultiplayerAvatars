@@ -1,22 +1,30 @@
 using BeatSaber.AvatarCore;
 using CustomAvatar.Tracking;
+using IPA.Utilities;
 using System;
 using UnityEngine;
 
 namespace MultiplayerAvatars.Avatars
 {
     // Feeds a connected player's synced head/hand poses to a custom avatar.
-    // CustomAvatars uses the transforms we hand out as IK targets / constraint sources,
-    // so we keep our own transforms in the same space the base game avatar is posed in.
+    // CustomAvatars uses the transforms we hand out as IK targets / constraint sources.
     internal class MultiplayerAvatarInput : IAvatarInput, IDisposable
     {
-        private readonly IAvatarPoseDataProvider _poseDataProvider;
+        private static readonly FieldAccessor<MultiplayerAvatarPoseController, Transform>.Accessor HeadTransform
+            = FieldAccessor<MultiplayerAvatarPoseController, Transform>.GetAccessor("_headTransform");
+        private static readonly FieldAccessor<MultiplayerAvatarPoseController, Transform>.Accessor LeftSaberTransform
+            = FieldAccessor<MultiplayerAvatarPoseController, Transform>.GetAccessor("_leftSaberTransform");
+        private static readonly FieldAccessor<MultiplayerAvatarPoseController, Transform>.Accessor RightSaberTransform
+            = FieldAccessor<MultiplayerAvatarPoseController, Transform>.GetAccessor("_rightSaberTransform");
 
-        private readonly Transform _root;
+        private readonly IAvatarPoseDataProvider? _poseDataProvider;
+
+        private readonly Transform? _root;
         private readonly Transform _head;
         private readonly Transform _leftHand;
         private readonly Transform _rightHand;
 
+        // Keeps our own transforms in the space the base game avatar is posed in, updated from the pose data provider
         internal MultiplayerAvatarInput(IAvatarPoseDataProvider poseDataProvider, Transform parent)
         {
             _poseDataProvider = poseDataProvider;
@@ -31,6 +39,26 @@ namespace MultiplayerAvatars.Avatars
             _poseDataProvider.poseDidChangeEvent += HandlePoseDidChange;
         }
 
+        // Uses the head/saber transforms the game itself moves for this player
+        private MultiplayerAvatarInput(Transform head, Transform leftHand, Transform rightHand)
+        {
+            _head = head;
+            _leftHand = leftHand;
+            _rightHand = rightHand;
+        }
+
+        internal static MultiplayerAvatarInput? FromPoseController(MultiplayerAvatarPoseController? poseController)
+        {
+            if (poseController == null)
+                return null;
+            var head = HeadTransform(ref poseController);
+            var leftHand = LeftSaberTransform(ref poseController);
+            var rightHand = RightSaberTransform(ref poseController);
+            if (head == null || leftHand == null || rightHand == null)
+                return null;
+            return new MultiplayerAvatarInput(head, leftHand, rightHand);
+        }
+
         public bool allowMaintainPelvisPosition => true;
 
         // Our transforms never change identity, so there is nothing to notify about
@@ -38,7 +66,8 @@ namespace MultiplayerAvatars.Avatars
 
         public void Dispose()
         {
-            _poseDataProvider.poseDidChangeEvent -= HandlePoseDidChange;
+            if (_poseDataProvider != null)
+                _poseDataProvider.poseDidChangeEvent -= HandlePoseDidChange;
             if (_root != null)
                 UnityEngine.Object.Destroy(_root.gameObject);
         }

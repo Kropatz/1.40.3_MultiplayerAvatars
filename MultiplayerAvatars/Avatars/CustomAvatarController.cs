@@ -25,6 +25,11 @@ namespace MultiplayerAvatars.Avatars
         private Renderer[]? _hiddenRenderers;
         private int _loadVersion;
         private bool _started;
+        private float _diagnosticsTime = -1f;
+
+        // In gameplay the avatar pose provider doesn't reliably update, so drive the avatar from the
+        // head/saber transforms the game moves for this player instead (lobby avatars keep using pose data)
+        private bool _usePoseControllerTransforms;
 
         private AvatarController _avatarController = null!;
         private AvatarSpawner _avatarSpawner = null!;
@@ -52,6 +57,7 @@ namespace MultiplayerAvatars.Avatars
             _customAvatarManager = customAvatarManager;
             _avatarProvider = avatarProvider;
             _poseDataProvider = poseDataProvider;
+            _usePoseControllerTransforms = GetComponent<LobbyAvatarInstaller>() == null;
 
             if (_avatarController == null || _avatarSpawner == null || _connectedPlayer == null
                 || _customAvatarManager == null || _avatarProvider == null || _poseDataProvider == null)
@@ -79,6 +85,12 @@ namespace MultiplayerAvatars.Avatars
             {
                 _hiddenRenderers = _avatarController.avatar.GetComponentsInChildren<Renderer>(true);
                 SetBaseAvatarVisible(false);
+            }
+
+            if (_diagnosticsTime >= 0f && Time.time >= _diagnosticsTime)
+            {
+                _diagnosticsTime = -1f;
+                LogDiagnostics();
             }
         }
 
@@ -142,13 +154,32 @@ namespace MultiplayerAvatars.Avatars
             DestroyCustomAvatar();
 
             var parent = ParentingTransform(ref _avatarController) ?? _avatarController.transform;
-            _avatarInput = new MultiplayerAvatarInput(_poseDataProvider, parent);
+            _avatarInput = _usePoseControllerTransforms
+                ? MultiplayerAvatarInput.FromPoseController(GetComponent<MultiplayerAvatarPoseController>())
+                : null;
+            if (_usePoseControllerTransforms && _avatarInput == null)
+                _logger?.Warn($"No usable {nameof(MultiplayerAvatarPoseController)} on '{name}', falling back to pose data");
+            _avatarInput ??= new MultiplayerAvatarInput(_poseDataProvider, parent);
             _spawnedAvatar = _avatarSpawner.SpawnAvatar(avatar, _avatarInput, parent);
             var avatarIk = _spawnedAvatar.GetComponent<AvatarIK>();
             if (avatarIk != null)
                 avatarIk.isLocomotionEnabled = true;
             ApplyScale();
-            _logger?.Info($"Spawned avatar '{avatar.descriptor.name}' for player '{_connectedPlayer.userName}'");
+            _diagnosticsTime = Time.time + 3f;
+            _logger?.Info($"Spawned avatar '{avatar.descriptor.name}' for player '{_connectedPlayer.userName}' " +
+                $"into '{parent.name}' (poseControllerTransforms={_usePoseControllerTransforms})");
+        }
+
+        private void LogDiagnostics()
+        {
+            if (_spawnedAvatar == null || _avatarInput == null)
+                return;
+            _avatarInput.TryGetTransform(CustomAvatar.Tracking.DeviceUse.Head, out var head);
+            _avatarInput.TryGetTransform(CustomAvatar.Tracking.DeviceUse.LeftHand, out var leftHand);
+            _avatarInput.TryGetTransform(CustomAvatar.Tracking.DeviceUse.RightHand, out var rightHand);
+            _logger?.Info($"Avatar diagnostics for '{_connectedPlayer.userName}': " +
+                $"head={head.position} left={leftHand.position} right={rightHand.position} " +
+                $"avatarScale={_spawnedAvatar.transform.lossyScale} active={_spawnedAvatar.gameObject.activeInHierarchy}");
         }
 
         private void ApplyScale()
