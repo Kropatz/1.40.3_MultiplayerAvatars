@@ -34,16 +34,24 @@ namespace MultiplayerAvatars.Avatars
         private IAvatarPoseDataProvider _poseDataProvider = null!;
         private SiraLog? _logger;
 
+        // SiraLog can't be resolved through DiContainer.TryResolve: SiraUtil names it after the injected type,
+        // which only exists in a regular injection context
         [Inject]
-        public void Construct(DiContainer container)
+        public void Construct(
+            [InjectOptional] AvatarSpawner avatarSpawner,
+            [InjectOptional] IConnectedPlayer connectedPlayer,
+            [InjectOptional] CustomAvatarManager customAvatarManager,
+            [InjectOptional] AvatarProviderService avatarProvider,
+            [InjectOptional] IAvatarPoseDataProvider poseDataProvider,
+            [InjectOptional] SiraLog logger)
         {
-            _logger = container.TryResolve<SiraLog>();
+            _logger = logger;
             _avatarController = GetComponent<AvatarController>();
-            _avatarSpawner = container.TryResolve<AvatarSpawner>();
-            _connectedPlayer = container.TryResolve<IConnectedPlayer>();
-            _customAvatarManager = container.TryResolve<CustomAvatarManager>();
-            _avatarProvider = container.TryResolve<AvatarProviderService>();
-            _poseDataProvider = container.TryResolve<IAvatarPoseDataProvider>();
+            _avatarSpawner = avatarSpawner;
+            _connectedPlayer = connectedPlayer;
+            _customAvatarManager = customAvatarManager;
+            _avatarProvider = avatarProvider;
+            _poseDataProvider = poseDataProvider;
 
             if (_avatarController == null || _avatarSpawner == null || _connectedPlayer == null
                 || _customAvatarManager == null || _avatarProvider == null || _poseDataProvider == null)
