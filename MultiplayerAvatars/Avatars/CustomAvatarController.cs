@@ -5,7 +5,6 @@ using MultiplayerAvatars.Networking;
 using MultiplayerAvatars.Providers;
 using SiraUtil.Logging;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -30,7 +29,6 @@ namespace MultiplayerAvatars.Avatars
         private Renderer[]? _hiddenRenderers;
         private int _loadVersion;
         private bool _started;
-        private float _diagnosticsTime = -1f;
 
         // In gameplay the avatar pose provider doesn't reliably update, so drive the avatar from the
         // head/saber transforms the game moves for this player instead (lobby avatars keep using pose data)
@@ -90,12 +88,6 @@ namespace MultiplayerAvatars.Avatars
             {
                 _hiddenRenderers = _avatarController.avatar.GetComponentsInChildren<Renderer>(true);
                 SetBaseAvatarVisible(false);
-            }
-
-            if (_diagnosticsTime >= 0f && Time.time >= _diagnosticsTime)
-            {
-                _diagnosticsTime = -1f;
-                LogDiagnostics();
             }
         }
 
@@ -181,23 +173,8 @@ namespace MultiplayerAvatars.Avatars
             if (avatarIk != null)
                 avatarIk.isLocomotionEnabled = true;
             ApplyScale();
-            _diagnosticsTime = Time.time + 3f;
-            _logger?.Info($"Spawned avatar '{avatar.descriptor.name}' for player '{_connectedPlayer.userName}' " +
+            _logger?.Debug($"Spawned avatar '{avatar.descriptor.name}' for player '{_connectedPlayer.userName}' " +
                 $"into '{parent.name}' (poseControllerTransforms={_usePoseControllerTransforms})");
-        }
-
-        private void LogDiagnostics()
-        {
-            if (_spawnedAvatar == null || _avatarInput == null)
-                return;
-            _avatarInput.TryGetTransform(CustomAvatar.Tracking.DeviceUse.Head, out var head);
-            _avatarInput.TryGetTransform(CustomAvatar.Tracking.DeviceUse.LeftHand, out var leftHand);
-            _avatarInput.TryGetTransform(CustomAvatar.Tracking.DeviceUse.RightHand, out var rightHand);
-            _logger?.Info($"Avatar diagnostics for '{_connectedPlayer.userName}': " +
-                $"head={head.position} left={leftHand.position} right={rightHand.position} " +
-                $"avatarScale={_spawnedAvatar.transform.lossyScale} active={_spawnedAvatar.gameObject.activeInHierarchy} " +
-                $"root={_spawnedAvatar.transform.position} headBone={(_spawnedAvatar.head != null ? _spawnedAvatar.head.position.ToString() : "none")} " +
-                $"renderers={_spawnedAvatar.GetComponentsInChildren<Renderer>().Count(r => r.enabled && r.isVisible)}/{_spawnedAvatar.GetComponentsInChildren<Renderer>(true).Length} visible");
         }
 
         private void ApplyScale()
