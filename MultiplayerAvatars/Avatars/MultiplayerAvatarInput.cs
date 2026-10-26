@@ -1,55 +1,66 @@
 using BeatSaber.AvatarCore;
-using CustomAvatar.Avatar;
 using CustomAvatar.Tracking;
 using System;
 using UnityEngine;
 
 namespace MultiplayerAvatars.Avatars
 {
-    internal sealed class MultiplayerAvatarInput : IAvatarInput, IDisposable
+    // Feeds a connected player's synced head/hand poses to a custom avatar.
+    // CustomAvatars uses the transforms we hand out as IK targets / constraint sources,
+    // so we keep our own transforms in the same space the base game avatar is posed in.
+    internal class MultiplayerAvatarInput : IAvatarInput, IDisposable
     {
-        private readonly IAvatarPoseDataProvider _provider;
-        private AvatarPoseData _pose;
+        private readonly IAvatarPoseDataProvider _poseDataProvider;
+
         private readonly Transform _root;
         private readonly Transform _head;
-        private readonly Transform _left;
-        private readonly Transform _right;
+        private readonly Transform _leftHand;
+        private readonly Transform _rightHand;
 
-        internal MultiplayerAvatarInput(IAvatarPoseDataProvider provider, Transform parent)
+        internal MultiplayerAvatarInput(IAvatarPoseDataProvider poseDataProvider, Transform parent)
         {
-            _provider = provider;
-            _root = new GameObject("MultiplayerAvatars Tracking").transform;
+            _poseDataProvider = poseDataProvider;
+
+            _root = new GameObject(nameof(MultiplayerAvatarInput)).transform;
             _root.SetParent(parent, false);
-            _head = CreateTarget("Head");
-            _left = CreateTarget("Left Hand");
-            _right = CreateTarget("Right Hand");
-            OnPoseChanged(provider.currentPose);
-            provider.poseDidChangeEvent += OnPoseChanged;
+            _head = CreateNode("Head");
+            _leftHand = CreateNode("LeftHand");
+            _rightHand = CreateNode("RightHand");
+
+            HandlePoseDidChange(_poseDataProvider.currentPose);
+            _poseDataProvider.poseDidChangeEvent += HandlePoseDidChange;
         }
 
-        private Transform CreateTarget(string name)
-        {
-            var target = new GameObject(name).transform;
-            target.SetParent(_root, false);
-            return target;
-        }
+        public bool allowMaintainPelvisPosition => true;
 
-        private void OnPoseChanged(AvatarPoseData pose)
-        {
-            _pose = pose;
-            _head.SetLocalPositionAndRotation(pose.headPose.position, pose.headPose.rotation);
-            _left.SetLocalPositionAndRotation(pose.leftHandPose.position, pose.leftHandPose.rotation);
-            _right.SetLocalPositionAndRotation(pose.rightHandPose.position, pose.rightHandPose.rotation);
-            inputChanged?.Invoke();
-        }
+        // Our transforms never change identity, so there is nothing to notify about
+        public event Action? inputChanged { add { } remove { } }
 
         public void Dispose()
         {
-            _provider.poseDidChangeEvent -= OnPoseChanged;
-            if (_root != null) UnityEngine.Object.Destroy(_root.gameObject);
+            _poseDataProvider.poseDidChangeEvent -= HandlePoseDidChange;
+            if (_root != null)
+                UnityEngine.Object.Destroy(_root.gameObject);
         }
-        public bool allowMaintainPelvisPosition => true;
-        public event Action? inputChanged;
+
+        public bool TryGetTransform(DeviceUse use, out Transform transform)
+        {
+            switch (use)
+            {
+                case DeviceUse.Head:
+                    transform = _head;
+                    return true;
+                case DeviceUse.LeftHand:
+                    transform = _leftHand;
+                    return true;
+                case DeviceUse.RightHand:
+                    transform = _rightHand;
+                    return true;
+                default:
+                    transform = null!;
+                    return false;
+            }
+        }
 
         public bool TryGetFingerCurl(DeviceUse use, out FingerCurl curl)
         {
@@ -57,27 +68,24 @@ namespace MultiplayerAvatars.Avatars
             return false;
         }
 
-        public bool TryGetPose(DeviceUse use, out Pose pose)
+        private Transform CreateNode(string name)
         {
-            switch (use)
-            {
-                case DeviceUse.Head: pose = _pose.headPose; return true;
-                case DeviceUse.LeftHand: pose = _pose.leftHandPose; return true;
-                case DeviceUse.RightHand: pose = _pose.rightHandPose; return true;
-                default: pose = Pose.identity; return false;
-            }
+            var node = new GameObject(name).transform;
+            node.SetParent(_root, false);
+            return node;
         }
 
-        // Custom Avatars' IK and constraints require real world-space targets.
-        public bool TryGetTransform(DeviceUse use, out Transform transform)
+        private void HandlePoseDidChange(AvatarPoseData pose)
         {
-            switch (use)
-            {
-                case DeviceUse.Head: transform = _head; return true;
-                case DeviceUse.LeftHand: transform = _left; return true;
-                case DeviceUse.RightHand: transform = _right; return true;
-                default: transform = null!; return false;
-            }
+            if (_root == null)
+                return;
+            _head.SetLocalPositionAndRotation(pose.headPose.position, Normalized(pose.headPose.rotation));
+            _leftHand.SetLocalPositionAndRotation(pose.leftHandPose.position, Normalized(pose.leftHandPose.rotation));
+            _rightHand.SetLocalPositionAndRotation(pose.rightHandPose.position, Normalized(pose.rightHandPose.rotation));
         }
+
+        // Poses default to an all-zero quaternion before the first sync state arrives
+        private static Quaternion Normalized(Quaternion rotation)
+            => rotation == new Quaternion(0f, 0f, 0f, 0f) ? Quaternion.identity : rotation;
     }
 }
