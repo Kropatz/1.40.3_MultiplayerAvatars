@@ -91,10 +91,11 @@ namespace MultiplayerAvatars.Providers
                     using (var fs = File.OpenRead(avatarFile))
                     {
                         string hash = BitConverter.ToString(MD5.Create().ComputeHash(fs)).Replace("-", "");
-                        if (_cachedAvatarPaths.ContainsKey(hash))
-                            return;
-                        _cachedAvatarPaths[hash] = avatarFile;
+                        // Index every filename, but keep one load path for identical content.
                         _cachedAvatarHashes[avatarFile] = hash;
+                        if (_cachedAvatarPaths.ContainsKey(hash))
+                            continue;
+                        _cachedAvatarPaths[hash] = avatarFile;
                     }
                 }
                 catch (Exception ex)
