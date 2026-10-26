@@ -17,8 +17,9 @@ namespace MultiplayerAvatars.Installers
 
         private MultiplayerConnectedPlayerFacade DecorateConnectedPlayerFacade(MultiplayerConnectedPlayerFacade original)
         {
-            original.GetComponentInChildren<MultiplayerAvatarPoseController>().gameObject.AddComponent<CustomAvatarController>();
-            GameObject.Destroy(original.GetComponentInChildren<MultiplayerAvatarPoseController>().gameObject.GetComponent<Animator>());
+            var avatar = original.GetComponentInChildren<AvatarController>(true);
+            if (avatar != null && avatar.GetComponent<CustomAvatarController>() == null)
+                avatar.gameObject.AddComponent<CustomAvatarController>();
             return original;
         }
     }

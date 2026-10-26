@@ -14,7 +14,9 @@ namespace MultiplayerAvatars.Installers
 
         private MultiplayerLobbyAvatarController DecorateAvatar(MultiplayerLobbyAvatarController original)
         {
-            original.gameObject.AddComponent<CustomAvatarController>();
+            var avatar = original.GetComponentInChildren<BeatSaber.AvatarCore.AvatarController>(true);
+            if (avatar != null && avatar.GetComponent<CustomAvatarController>() == null)
+                avatar.gameObject.AddComponent<CustomAvatarController>();
             return original;
         }
     }
