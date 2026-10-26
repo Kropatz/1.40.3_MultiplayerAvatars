@@ -60,7 +60,8 @@ namespace MultiplayerAvatars.Providers
         {
             try
             {
-                var response = await _httpService.GetAsync($"https://modelsaber.com/api/v2/get.php?filter=hash:{hash}", cancellationToken: cancellationToken).ConfigureAwait(false);
+                // The hash filter is case-sensitive and ModelSaber stores lowercase hashes
+                var response = await _httpService.GetAsync($"https://modelsaber.com/api/v2/get.php?filter=hash:{hash.ToLowerInvariant()}", cancellationToken: cancellationToken).ConfigureAwait(false);
 
                 if (!response.Successful)
                 {
