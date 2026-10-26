@@ -65,10 +65,10 @@ namespace MultiplayerAvatars.Providers
 
         public void AddAvatar(string path, string hash)
         {
+            _cachedAvatarHashes[path] = hash;
             if (_cachedAvatarPaths.ContainsKey(hash))
                 return;
             _cachedAvatarPaths[hash] = path;
-            _cachedAvatarHashes[path] = hash;
         }
 
         public void AddAvatar(string path)
@@ -76,10 +76,10 @@ namespace MultiplayerAvatars.Providers
             using (var fs = File.OpenRead(path))
             {
                 string hash = BitConverter.ToString(MD5.Create().ComputeHash(fs)).Replace("-", "");
+                _cachedAvatarHashes[path] = hash;
                 if (_cachedAvatarPaths.ContainsKey(hash))
                     return;
                 _cachedAvatarPaths[hash] = path;
-                _cachedAvatarHashes[path] = hash;
             }
         }
 
@@ -93,10 +93,11 @@ namespace MultiplayerAvatars.Providers
                     using (var fs = File.OpenRead(avatarFile))
                     {
                         string hash = BitConverter.ToString(MD5.Create().ComputeHash(fs)).Replace("-", "");
+                        // Index every file, but keep one load path for identical content
+                        _cachedAvatarHashes[avatarFile] = hash;
                         if (_cachedAvatarPaths.ContainsKey(hash))
                             continue;
                         _cachedAvatarPaths[hash] = avatarFile;
-                        _cachedAvatarHashes[avatarFile] = hash;
                     }
                 }
                 catch (Exception ex)

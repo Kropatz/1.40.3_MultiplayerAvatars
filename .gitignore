@@ -346,3 +346,5 @@ Refs/Libs/Mono*
 /bsinstalldir.txt
 
 MultiplayerAvatars/Properties/launchSettings.json
+
+logs/
